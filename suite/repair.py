@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from suite.llm import OllamaClient
+from suite.files import replace_file
 from suite.contracts import ROOT, contract_type
 from suite.runner import regular_file
 
@@ -153,7 +154,7 @@ def main():
         if app_path.read_text(encoding="utf-8") != original:
             raise RuntimeError("app.py changed during generation.")
 
-        app_path.write_text(content, encoding="utf-8")
+        replace_file(app_path, content, expected=original)
         print(f"Repair applied. Original, candidate, and diff saved in:\n{attempt}")
         print("Acceptance tests unchanged. Behavior has not been verified.")
 

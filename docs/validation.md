@@ -148,3 +148,20 @@ Both real Docker integration workflows also passed after the change, exercising
 planning, generation, one bounded repair, backend/Chromium acceptance and preview
 CRUD/cleanup for task-manager and expense-tracker projects. The separate Python
 3.11 syntax-rejection Docker case was not rerun for this follow-up.
+
+## Follow-up: atomic backend repair
+
+Applying a repair now stages and flushes the complete candidate in the backend's
+own directory before atomically replacing `app.py`. Failures during flushing or
+replacement leave the active source intact; the existing checkpoint, candidate
+and diff remain available. The replacement retains file permissions and rejects
+source edits observed while the candidate is being staged.
+
+The fast suite passed 70 tests, with two desktop checks skipped without a display
+and three opt-in Docker cases deselected. New cases inject flush and replacement
+failures, verify candidate/checkpoint preservation and temporary-file cleanup,
+and check permission preservation and concurrent-edit detection.
+The real expense-tracker Docker integration also passed: one deliberate defect
+was repaired, all 29 backend and 12 Chromium cases passed, and preview HTTP
+create/read and cleanup succeeded. The other two Docker cases were deselected
+for this follow-up.
