@@ -1,0 +1,27 @@
+.venv/
+.venv-desktop/
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+
+# Local backups and generated history
+*.bak
+*.original
+*.before-*
+workspaces/*/repairs/
+workspaces/*/runs/
+workspaces/*/generation_responses/
+workspaces/*/frontend-backups/
+workspaces/*/*-report.json
+
+# Test artifacts
+test-results/
+playwright-report/

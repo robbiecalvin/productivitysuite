@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/app.js" defer></script>
+</head>
+<body>
+    <main>
+        <h1>Task Manager</h1>
+
+        <p data-testid="error-message" role="alert" hidden></p>
+
+        <form id="add-task-form">
+            <label for="task-title">Title</label>
+            <input
+                id="task-title"
+                name="title"
+                data-testid="task-title"
+                maxlength="200"
+                required
+            >
+
+            <label for="task-description">Description</label>
+            <textarea
+                id="task-description"
+                name="description"
+                data-testid="task-description"
+                maxlength="5000"
+            ></textarea>
+
+            <button type="submit" data-testid="add-task">Add Task</button>
+        </form>
+
+        <ul id="task-list" data-testid="task-list" aria-label="Tasks"></ul>
+    </main>
+</body>
+</html>

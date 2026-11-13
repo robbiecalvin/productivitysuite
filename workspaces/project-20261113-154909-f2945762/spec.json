@@ -1,0 +1,96 @@
+{
+  "name": "Personal Expense Tracker",
+  "summary": "A simple web application to track personal expenses with functionalities to add expenses, filter by category, and view totals.",
+  "requirements": [
+    "Users can add expenses with date, category, description, and amount.",
+    "Users can filter expenses by category.",
+    "Users can view the total amount of expenses."
+  ],
+  "acceptance_criteria": [
+    "Adding an expense should update the database with the provided details.",
+    "Filtering expenses by category should display only expenses that match the selected category.",
+    "Viewing the total should display the sum of all expenses."
+  ],
+  "tasks": [
+    {
+      "id": "task_1",
+      "title": "Set up Flask project",
+      "description": "Create a new Flask project with the necessary dependencies (Flask, sqlite3, pytest, pytest-flask, selenium).",
+      "depends_on": []
+    },
+    {
+      "id": "task_2",
+      "title": "Design database schema",
+      "description": "Define a SQLite database schema to store expenses with fields for date, category, description, and amount.",
+      "depends_on": [
+        "task_1"
+      ]
+    },
+    {
+      "id": "task_3",
+      "title": "Create backend routes",
+      "description": "Develop backend routes to handle adding expenses, filtering expenses by category, and retrieving total expenses.",
+      "depends_on": [
+        "task_2"
+      ]
+    },
+    {
+      "id": "task_4",
+      "title": "Write backend tests",
+      "description": "Create unit tests for the backend routes to ensure they function correctly.",
+      "depends_on": [
+        "task_3"
+      ]
+    },
+    {
+      "id": "task_5",
+      "title": "Design HTML templates",
+      "description": "Create HTML templates for adding expenses, filtering expenses, and displaying totals.",
+      "depends_on": [
+        "task_1"
+      ]
+    },
+    {
+      "id": "task_6",
+      "title": "Implement frontend functionality",
+      "description": "Write JavaScript to handle user interactions with the HTML templates, including adding expenses, filtering, and displaying totals.",
+      "depends_on": [
+        "task_5"
+      ]
+    },
+    {
+      "id": "task_7",
+      "title": "Write browser tests",
+      "description": "Create end-to-end tests using Selenium to ensure the application works as expected in a browser.",
+      "depends_on": [
+        "task_6"
+      ]
+    },
+    {
+      "id": "task_8",
+      "title": "Style application with CSS",
+      "description": "Add CSS to make the application visually appealing and user-friendly.",
+      "depends_on": [
+        "task_5"
+      ]
+    },
+    {
+      "id": "task_9",
+      "title": "Test application",
+      "description": "Run all backend and browser tests to ensure the application is functioning correctly.",
+      "depends_on": [
+        "task_4",
+        "task_7"
+      ]
+    },
+    {
+      "id": "task_10",
+      "title": "Deploy application",
+      "description": "Deploy the application to a local server or a platform like Heroku for public access.",
+      "depends_on": [
+        "task_9"
+      ]
+    }
+  ],
+  "objective": "Build a personal expense tracker where I can add expenses with a date, category, description, and amount, filter by category, and see a total."
+}

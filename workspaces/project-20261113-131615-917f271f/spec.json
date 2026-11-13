@@ -1,0 +1,83 @@
+{
+  "name": "Simple Task Manager",
+  "summary": "A web application to manage tasks locally, allowing users to add, mark as complete, and delete tasks. Tasks are saved persistently between app restarts.",
+  "requirements": [
+    "User can add new tasks with a title and description.",
+    "User can mark a task as complete.",
+    "User can delete a task.",
+    "Tasks persist between application restarts."
+  ],
+  "acceptance_criteria": [
+    "A user can add a new task with a title and description.",
+    "A user can mark a task as complete, and the task's status changes accordingly.",
+    "A user can delete a task, and it is removed from the list.",
+    "The application loads tasks saved from previous sessions upon startup."
+  ],
+  "tasks": [
+    {
+      "id": "task_1",
+      "title": "Set up Flask project",
+      "description": "Create a new Flask project with a basic structure.",
+      "depends_on": []
+    },
+    {
+      "id": "task_2",
+      "title": "Design the database schema",
+      "description": "Define a model for tasks using sqlite3, including fields for title, description, completion status, and timestamp.",
+      "depends_on": [
+        "task_1"
+      ]
+    },
+    {
+      "id": "task_3",
+      "title": "Implement routes for task management",
+      "description": "Create Flask routes to handle adding, marking as complete, and deleting tasks.",
+      "depends_on": [
+        "task_2"
+      ]
+    },
+    {
+      "id": "task_4",
+      "title": "Create HTML templates",
+      "description": "Design HTML templates for the task manager interface, including forms for adding tasks and a list to display tasks.",
+      "depends_on": [
+        "task_1"
+      ]
+    },
+    {
+      "id": "task_5",
+      "title": "Implement JavaScript for user interactions",
+      "description": "Add JavaScript to handle user interactions with the form and list, updating the UI based on user actions.",
+      "depends_on": [
+        "task_4"
+      ]
+    },
+    {
+      "id": "task_6",
+      "title": "Write backend tests",
+      "description": "Create unit tests for the Flask routes to ensure they handle tasks correctly.",
+      "depends_on": [
+        "task_3"
+      ]
+    },
+    {
+      "id": "task_7",
+      "title": "Write browser tests",
+      "description": "Create tests to ensure the HTML and JavaScript work as expected in a web browser.",
+      "depends_on": [
+        "task_4",
+        "task_5"
+      ]
+    },
+    {
+      "id": "task_8",
+      "title": "Persist tasks across sessions",
+      "description": "Modify the application to save tasks to the sqlite3 database and load them on startup.",
+      "depends_on": [
+        "task_2",
+        "task_3"
+      ]
+    }
+  ],
+  "objective": "Build a simple task manager where I can add tasks, mark them complete, and delete them. Save tasks between app restarts."
+}
