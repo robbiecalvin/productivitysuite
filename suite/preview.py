@@ -6,7 +6,7 @@ from pathlib import Path
 
 import requests
 
-from suite.runner import find_docker, run_logged
+from suite.runner import find_docker, build_image, container_options
 
 
 def docker_output(docker, arguments):
@@ -28,12 +28,6 @@ def main():
     args = parser.parse_args()
 
     workspace = args.workspace.resolve()
-    app_dir = workspace / "app"
-    dockerfile = app_dir / "Dockerfile.backend-test"
-
-    if not dockerfile.is_file():
-        raise SystemExit(f"Missing Dockerfile: {dockerfile}")
-
     docker = find_docker()
     identifier = uuid.uuid4().hex[:12]
     image = f"productivity-preview:{identifier}"
@@ -43,12 +37,7 @@ def main():
     try:
         print("Building preview image...", flush=True)
         build_log = workspace / "preview-build.log"
-        code = run_logged(
-            [docker, "build", "-f", str(dockerfile),
-             "-t", image, str(app_dir)],
-            build_log,
-            timeout=600,
-        )
+        code = build_image(docker, workspace, image, 'backend', build_log)
         if code:
             raise RuntimeError(
                 f"Preview build failed. See {build_log}"
@@ -57,13 +46,8 @@ def main():
         print("Starting local preview...", flush=True)
         docker_output(docker, [
             "run", "-d", "--init", "--name", container,
-            "--read-only",
-            "--tmpfs", "/tmp:rw,nosuid,size=128m",
-            "--cap-drop", "ALL",
-            "--security-opt", "no-new-privileges",
-            "--memory", "1g",
-            "--cpus", "2",
-            "--pids-limit", "128",
+            *container_options(),
+            "--network", "bridge",
             "-p", "127.0.0.1::8000",
             image,
             "python", "-c",
@@ -102,7 +86,7 @@ def main():
 
         print(f"PREVIEW_URL={url}", flush=True)
         print("Preview ready. Click Open Preview.", flush=True)
-        print("Tasks are temporary and disappear when stopped.", flush=True)
+        print("Preview records are temporary and disappear when stopped.", flush=True)
 
         while True:
             time.sleep(2)
@@ -115,7 +99,7 @@ def main():
 
     except KeyboardInterrupt:
         print("\nStopping preview...", flush=True)
-    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
         print(f"\nPreview error: {error}", flush=True)
         exit_code = 1
     finally:

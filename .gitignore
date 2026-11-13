@@ -25,3 +25,7 @@ workspaces/*/*-report.json
 # Test artifacts
 test-results/
 playwright-report/
+
+# Suite verification outputs
+.pytest_cache/
+workspaces/*/*-results.xml

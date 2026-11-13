@@ -1,3 +1,4 @@
+"""Bounded backend repair, with immutable inputs and per-attempt evidence."""
 import argparse
 import hashlib
 import json
@@ -8,175 +9,121 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from suite.contracts import ROOT, contract_type
+from suite.runner import regular_file, verify
+
 
 def fingerprint(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def invoke(module, arguments):
-    return subprocess.run(
-        [sys.executable, "-m", module, *arguments],
-        check=False,
-    ).returncode
+    return subprocess.run([sys.executable, '-m', module, *arguments], check=False).returncode
+
+
+def run_controller(workspace, max_repairs=3, verify_fn=None, repair_fn=None):
+    if type(max_repairs) is not int or not 0 <= max_repairs <= 3:
+        raise ValueError('--max-repairs must be between 0 and 3.')
+    verify_fn = verify_fn or verify
+    repair_fn = repair_fn or (lambda path: invoke('suite.repair', [str(path)]))
+    workspace = Path(workspace).resolve()
+    app_path = regular_file(workspace, 'app/app.py')
+    kind = contract_type(json.loads(regular_file(workspace, 'contract.json').read_text()))
+    regular_file(workspace, 'spec.json')
+    # Every existing input except the single repair target is immutable.
+    protected = [workspace / 'spec.json', workspace / 'contract.json']
+    protected += [p for p in (workspace / 'app').rglob('*') if p.is_file() and p != app_path]
+    protected += list((ROOT / 'acceptance' / kind).glob('test_*.py'))
+    for path in protected:
+        regular_file(path.parent, path.name)
+    original_hashes = {path: fingerprint(path) for path in protected}
+    original_files = {p.relative_to(workspace / 'app') for p in (workspace / 'app').rglob('*') if p.is_file()}
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
+    run_dir = workspace / 'runs' / f'{stamp}-{uuid.uuid4().hex[:8]}'
+    run_dir.mkdir(parents=True)
+    report = {'workspace': str(workspace), 'scope': 'suite-owned acceptance; app.py repairs only',
+              'passed': False, 'repairs_attempted': 0, 'checks': [], 'status': 'running'}
+    (run_dir / 'protected-hashes.json').write_text(json.dumps({str(p): h for p, h in original_hashes.items()}, indent=2))
+
+    def check_protected_files():
+        regular_file(workspace, 'app/app.py')
+        current = {p.relative_to(workspace / 'app') for p in (workspace / 'app').rglob('*') if p.is_file()}
+        if current != original_files:
+            raise RuntimeError('Application file membership changed during verification or repair.')
+        for path, expected in original_hashes.items():
+            regular_file(path.parent, path.name)
+            if fingerprint(path) != expected:
+                raise RuntimeError(f'Protected file changed: {path}')
+
+    def check(mode, checkpoint):
+        result = verify_fn(workspace, mode)
+        check_protected_files()
+        (checkpoint / f'{mode}-report.json').write_text(json.dumps(result, indent=2) + '\n')
+        for name in (f'{mode}-build.log', f'{mode}-test.log', f'{mode}-results.xml'):
+            source = workspace / name
+            if source.is_file():
+                shutil.copyfile(source, checkpoint / name)
+        report['checks'].append({'mode': mode, 'result': result, 'checkpoint': str(checkpoint)})
+        return result
+
+    try:
+        for attempt in range(max_repairs + 1):
+            check_protected_files()
+            checkpoint = run_dir / f'check-{attempt}'
+            checkpoint.mkdir()
+            shutil.copyfile(app_path, checkpoint / 'app.py')
+            print(f'Verification {attempt + 1}: backend acceptance', flush=True)
+            result = check('backend', checkpoint)
+            if result.get('passed'):
+                print('Backend passed; running backend and browser acceptance.', flush=True)
+                result = check('browser', checkpoint)
+                report['passed'] = result.get('passed') is True
+                report['status'] = 'passed' if report['passed'] else 'browser_or_infrastructure_failure'
+                break
+            if result.get('build_exit_code') != 0:
+                report['status'] = 'build_failed'
+                break
+            # Collection errors, timeouts, zero tests and runner errors are not repair evidence.
+            if (result.get('test_exit_code') != 1 or result.get('error')
+                    or not result.get('counts', {}).get('failed')):
+                report['status'] = 'test_infrastructure_failed'
+                break
+            if attempt == max_repairs:
+                report['status'] = 'repair_limit_reached'
+                break
+            before = fingerprint(app_path)
+            report['repairs_attempted'] += 1
+            code = repair_fn(workspace)
+            check_protected_files()
+            if code != 0:
+                report['status'] = 'repair_rejected'
+                break
+            if fingerprint(app_path) == before:
+                report['status'] = 'repair_made_no_change'
+                break
+    except KeyboardInterrupt:
+        report['status'] = 'interrupted'
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        report.update(status='controller_error', error=str(error))
+    finally:
+        (run_dir / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+    print(f"Result: {report['status']}\nRepairs attempted: {report['repairs_attempted']}\nReport: {run_dir / 'report.json'}")
+    if report.get('error'):
+        print(report['error'])
+    return report
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("workspace", type=Path)
-    parser.add_argument("--max-repairs", type=int, default=3)
+    parser.add_argument('workspace', type=Path)
+    parser.add_argument('--max-repairs', type=int, default=3)
     args = parser.parse_args()
-
-    if not 0 <= args.max_repairs <= 3:
-        raise SystemExit("--max-repairs must be between 0 and 3.")
-
-    workspace = args.workspace.resolve()
-    app_path = workspace / "app" / "app.py"
-
-    protected = [
-        workspace / "contract.json",
-        workspace / "spec.json",
-        workspace / "app" / "tests" / "test_backend.py",
-        workspace / "app" / "tests" / "test_browser.py",
-        workspace / "app" / "Dockerfile.backend-test",
-        workspace / "app" / "Dockerfile.browser-test",
-        workspace / "app" / "templates" / "index.html",
-        workspace / "app" / "static" / "app.js",
-        workspace / "app" / "static" / "style.css",
-        workspace / "app" / "requirements.txt",
-    ]
-
-    for path in [app_path, *protected]:
-        if not path.is_file() or path.is_symlink():
-            raise SystemExit(f"Missing file or unsupported symlink: {path}")
-
-    original_hashes = {path: fingerprint(path) for path in protected}
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    run_dir = workspace / "runs" / f"{stamp}-{uuid.uuid4().hex[:8]}"
-    run_dir.mkdir(parents=True)
-
-    report = {
-        "workspace": str(workspace),
-        "scope": "existing Flask project; app.py repairs only",
-        "passed": False,
-        "repairs_attempted": 0,
-        "checks": [],
-        "status": "running",
-    }
-
-    def check_protected_files():
-        for path, expected in original_hashes.items():
-            if not path.is_file() or fingerprint(path) != expected:
-                raise RuntimeError(f"Protected file changed: {path}")
-
     try:
-        for attempt in range(args.max_repairs + 1):
-            check_protected_files()
-
-            checkpoint = run_dir / f"check-{attempt}"
-            checkpoint.mkdir()
-            shutil.copy2(app_path, checkpoint / "app.py")
-
-            print(f"\n=== Verification {attempt + 1} ===", flush=True)
-            code = invoke(
-                "suite.runner",
-                [str(workspace), "--mode", "browser"],
-            )
-
-            for name in (
-                "browser-report.json",
-                "browser-build.log",
-                "browser-test.log",
-            ):
-                path = workspace / name
-                if path.exists():
-                    shutil.copy2(path, checkpoint / name)
-
-            check_protected_files()
-
-            runner_report_path = checkpoint / "browser-report.json"
-            if not runner_report_path.exists():
-                raise RuntimeError("Runner did not produce a report.")
-
-            result = json.loads(
-                runner_report_path.read_text(encoding="utf-8")
-            )
-            report["checks"].append({
-                "attempt": attempt,
-                "runner_exit_code": code,
-                "result": result,
-                "checkpoint": str(checkpoint),
-            })
-
-            if code == 0 and result.get("passed") is True:
-                report["passed"] = True
-                report["status"] = "passed"
-                break
-
-            if result.get("build_exit_code") != 0:
-                report["status"] = "build_failed"
-                break
-
-            # pytest: 1 = failed tests; 2 = interrupted/collection error.
-            # Other codes include usage errors, no tests, and timeouts.
-            if result.get("test_exit_code") not in (1, 2):
-                report["status"] = "test_infrastructure_failed"
-                break
-
-            test_log = workspace / "browser-test.log"
-            text = test_log.read_text(encoding="utf-8")
-
-            backend_failed = any(
-                line.startswith(("FAILED ", "ERROR "))
-                and "test_backend.py" in line
-                for line in text.splitlines()
-            )
-            if not backend_failed:
-                report["status"] = "frontend_or_unclassified_failure"
-                break
-
-            if attempt == args.max_repairs:
-                report["status"] = "repair_limit_reached"
-                break
-
-            # Existing repair module reads this filename.
-            shutil.copy2(test_log, workspace / "backend-test.log")
-
-            print("\n=== Requesting backend repair ===", flush=True)
-            report["repairs_attempted"] += 1
-
-            before = fingerprint(app_path)
-            repair_code = invoke("suite.repair", [str(workspace)])
-            check_protected_files()
-
-            if repair_code != 0:
-                report["status"] = "repair_rejected"
-                break
-            if fingerprint(app_path) == before:
-                report["status"] = "repair_made_no_change"
-                break
-
-    except KeyboardInterrupt:
-        report["status"] = "interrupted"
+        result = run_controller(args.workspace, args.max_repairs)
     except (OSError, ValueError, RuntimeError) as error:
-        report["status"] = "controller_error"
-        report["error"] = str(error)
-    finally:
-        report_path = run_dir / "report.json"
-        report_path.write_text(
-            json.dumps(report, indent=2) + "\n",
-            encoding="utf-8",
-        )
-
-    print(f"\nResult: {report['status']}")
-    print(f"Repairs attempted: {report['repairs_attempted']}")
-    print(f"Report: {report_path}")
-    if report.get("error"):
-        print(report["error"])
-    if not report["passed"]:
-        print("Current application is unverified. Checkpoints were preserved.")
-
-    raise SystemExit(0 if report["passed"] else 1)
+        raise SystemExit(str(error))
+    raise SystemExit(0 if result['passed'] else 1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

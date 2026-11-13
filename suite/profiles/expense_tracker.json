@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "project_type": "expense_tracker",
+  "project_name": "Personal Expense Tracker",
+  "scope": {
+    "delivery": "Local application and Docker preview",
+    "currency": "CAD only",
+    "excluded": [
+      "Public deployment",
+      "Authentication",
+      "Bank connections",
+      "Multiple currencies",
+      "Editing or deleting expenses"
+    ]
+  },
+  "stack": {
+    "backend": "Flask",
+    "database": "Python sqlite3",
+    "frontend": "HTML, CSS, vanilla JavaScript",
+    "backend_tests": "pytest",
+    "browser_tests": "pytest-playwright"
+  },
+  "files": [
+    "app.py",
+    "requirements.txt",
+    "templates/index.html",
+    "static/style.css",
+    "static/app.js",
+    "tests/test_backend.py",
+    "tests/test_browser.py"
+  ],
+  "application": {
+    "factory": "app.create_app(test_config=None)",
+    "database_config_key": "DATABASE",
+    "default_database": "instance/expenses.sqlite3",
+    "rules": [
+      "Apply defaults before test configuration overrides.",
+      "Use the configured database path for all connections.",
+      "Create its parent directory and schema on startup.",
+      "Preserve records across application instances.",
+      "Use parameterized SQL and close connections.",
+      "Tests use temporary databases."
+    ]
+  },
+  "expense": {
+    "id": "Database-generated integer",
+    "date": "Required valid calendar date, exactly YYYY-MM-DD",
+    "category": "Required trimmed string, 1 to 60 characters",
+    "description": "Optional string, at most 1000 characters; default empty",
+    "amount_cents": "Required integer from 1 through 100000000; reject booleans"
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "response": "Render templates/index.html"
+    },
+    {
+      "method": "POST",
+      "path": "/api/expenses",
+      "status": 201,
+      "request": {
+        "date": "YYYY-MM-DD",
+        "category": "string",
+        "description": "optional string",
+        "amount_cents": "integer"
+      },
+      "response": {
+        "expense": "Complete stored expense object"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/expenses",
+      "status": 200,
+      "query": {
+        "category": "Optional exact case-sensitive match after trimming; missing or empty means all categories"
+      },
+      "response": {
+        "expenses": "Matching expense objects, ordered by id ascending",
+        "total_cents": "Integer sum of matching amounts, or 0"
+      }
+    }
+  ],
+  "errors": {
+    "format": {
+      "error": "Nonempty human-readable message"
+    },
+    "invalid_input_status": 400,
+    "rules": [
+      "Reject malformed JSON, non-object bodies, and unexpected fields.",
+      "Validate types before string operations.",
+      "Reject invalid dates and amount values.",
+      "Return JSON errors rather than HTML for invalid API input.",
+      "Invalid creates must not insert any record."
+    ]
+  },
+  "ui": {
+    "selectors": [
+      "data-testid=\"expense-date\"",
+      "data-testid=\"expense-category\"",
+      "data-testid=\"expense-description\"",
+      "data-testid=\"expense-amount\"",
+      "data-testid=\"add-expense\"",
+      "data-testid=\"category-filter\"",
+      "data-testid=\"apply-filter\"",
+      "data-testid=\"expense-list\"",
+      "data-testid=\"expense-item\"",
+      "data-testid=\"expense-total\"",
+      "data-testid=\"error-message\""
+    ],
+    "rules": [
+      "Use accessible labels and keyboard-operable controls.",
+      "Amount input accepts positive decimal dollars with at most 2 decimals.",
+      "Convert dollars to cents using validated decimal text, not float rounding.",
+      "Display money as CAD $12.34, with exactly two decimal places.",
+      "Category filter is a text input with an Apply Filter button.",
+      "An empty category filter shows all records.",
+      "Show date, category, description, and amount for each expense.",
+      "Refresh the full filtered list and total after adding an expense.",
+      "Display network and API errors visibly and preserve failed form input.",
+      "Render user content as text, never executable HTML."
+    ]
+  },
+  "verification": [
+    "Empty list returns expenses=[] and total_cents=0.",
+    "Create an expense and verify every returned field and stored value.",
+    "Create multiple expenses and verify distinct IDs and ordering.",
+    "Amounts 10 and 20 cents total exactly 30 cents.",
+    "Filter by category and verify both matching records and total.",
+    "Unmatched category returns an empty list and zero total.",
+    "Reject malformed JSON, invalid dates, wrong types, and extra fields.",
+    "Reject zero, negative, fractional, boolean, and excessive cent amounts.",
+    "Reject empty or overlong categories and overlong descriptions.",
+    "Verify persistence using two app instances with the same database.",
+    "Browser: add two expenses and verify list and total.",
+    "Browser: filter expenses, then clear filter.",
+    "Browser: reload and verify saved expenses remain.",
+    "Browser: user HTML remains literal text.",
+    "Browser: simulate an API failure and verify visible error and retry."
+  ]
+}

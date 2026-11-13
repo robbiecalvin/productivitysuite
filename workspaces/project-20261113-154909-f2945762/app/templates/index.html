@@ -1,36 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Expense Tracker</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personal Expense Tracker</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Expense Tracker</h1>
-    <form id="add-expense-form" data-testid="add-expense">
-        <label for="expense-date">Date:</label>
-        <input type="date" id="expense-date" name="date" required data-testid="expense-date">
-        <br>
-        <label for="expense-category">Category:</label>
-        <input type="text" id="expense-category" name="category" required data-testid="expense-category">
-        <br>
-        <label for="expense-description">Description (optional):</label>
-        <textarea id="expense-description" name="description" maxlength="1000" data-testid="expense-description"></textarea>
-        <br>
-        <label for="expense-amount">Amount ($):</label>
-        <input type="text" id="expense-amount" name="amount" required data-testid="expense-amount">
-        <br>
-        <button type="submit">Add Expense</button>
-    </form>
-    <div id="category-filter">
-        <label for="filter-category">Filter by Category:</label>
-        <input type="text" id="filter-category" name="category" data-testid="category-filter">
-        <button onclick="applyFilter()">Apply Filter</button>
-    </div>
+<main>
+  <h1>Expense Tracker</h1>
+  <p>Record personal expenses in Canadian dollars.</p>
+  <form id="add-expense-form">
+    <label for="expense-date">Date</label>
+    <input type="date" id="expense-date" required data-testid="expense-date">
+    <label for="expense-category">Category</label>
+    <input id="expense-category" required maxlength="60" data-testid="expense-category">
+    <label for="expense-description">Description (optional)</label>
+    <textarea id="expense-description" maxlength="1000" data-testid="expense-description"></textarea>
+    <label for="expense-amount">Amount (CAD)</label>
+    <input id="expense-amount" required inputmode="decimal" data-testid="expense-amount">
+    <button id="add-expense" type="submit" data-testid="add-expense">Add Expense</button>
+  </form>
+  <section aria-label="Expense list">
+    <label for="filter-category">Filter by category</label>
+    <input id="filter-category" data-testid="category-filter">
+    <button id="apply-filter" type="button" data-testid="apply-filter">Apply Filter</button>
     <ul id="expense-list" data-testid="expense-list"></ul>
-    <p>Total: $<span id="expense-total">0.00</span></p>
-    <p id="error-message" style="color: red;"></p>
-    <script src="/static/app.js"></script>
+    <p>Total: <strong id="expense-total" data-testid="expense-total">CAD $0.00</strong></p>
+  </section>
+  <p id="error-message" data-testid="error-message" role="alert" hidden></p>
+</main>
+<script src="/static/app.js"></script>
 </body>
 </html>

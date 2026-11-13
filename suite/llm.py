@@ -1,14 +1,20 @@
+import os
+from urllib.parse import urlparse
+
 import requests
 
 
 class OllamaClient:
     def __init__(
         self,
-        model="qwen2.5-coder:7b",
-        base_url="http://localhost:11434",
+        model=None,
+        base_url=None,
     ):
-        self.model = model
-        self.base_url = base_url.rstrip("/")
+        self.model = model or os.environ.get("OLLAMA_MODEL", "qwen2.5-coder:7b")
+        self.base_url = (base_url or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")).rstrip("/")
+        parsed = urlparse(self.base_url)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("OLLAMA_BASE_URL must be an HTTP(S) URL without credentials, query, or fragment.")
 
     def chat(self, prompt, system="You are a precise coding assistant.", json_mode=False, generation_options=None):
         try:
@@ -34,18 +40,18 @@ class OllamaClient:
                 },
                 timeout=(5, 600),
             )
+        except requests.exceptions.Timeout as error:
+            raise RuntimeError("Ollama timed out while generating a response.") from error
         except requests.exceptions.ConnectionError as error:
             raise RuntimeError(
-                "Cannot connect to Ollama. Open the Ollama app."
+                "Cannot connect to Ollama. Start the service or configure OLLAMA_BASE_URL."
             ) from error
-        except requests.exceptions.Timeout as error:
-            raise RuntimeError(
-                "Ollama timed out while generating a response."
-            ) from error
+        except requests.exceptions.RequestException as error:
+            raise RuntimeError("Ollama request failed.") from error
 
         if not response.ok:
             raise RuntimeError(
-                f"Ollama HTTP {response.status_code}: {response.text}"
+                f"Ollama HTTP {response.status_code}: {response.text[:500]}"
             )
 
         try:

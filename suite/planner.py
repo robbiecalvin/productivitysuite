@@ -1,9 +1,11 @@
+import argparse
 import json
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 from suite.llm import OllamaClient
+from suite.contracts import SUPPORTED_TYPES
 
 
 SYSTEM = """
@@ -11,6 +13,7 @@ You are a software project planner.
 
 Return only one valid JSON object with these fields:
 {
+  "project_type": "task_manager or expense_tracker",
   "name": "Short project name",
   "summary": "What the application does",
   "requirements": ["Specific functional requirement"],
@@ -33,6 +36,9 @@ Rules:
 - Order tasks so dependencies appear before the tasks that need them.
 - Use unique task IDs.
 - Do not include source code or shell commands.
+- Support only task_manager (create, list, toggle, delete tasks) or expense_tracker
+  (add dated CAD expenses, filter category, exact cent totals; no edit/delete).
+- Reject unrelated scope. Do not include deployment, authentication, or paid services.
 - Keep scope realistic for a first working prototype.
 """
 
@@ -40,6 +46,9 @@ Rules:
 def validate_spec(spec):
     if not isinstance(spec, dict):
         raise ValueError("The specification must be a JSON object.")
+
+    if spec.get("project_type") not in SUPPORTED_TYPES:
+        raise ValueError("Choose a supported project_type: task_manager or expense_tracker.")
 
     for field in ("name", "summary"):
         if not isinstance(spec.get(field), str) or not spec[field].strip():
@@ -87,54 +96,37 @@ def validate_spec(spec):
     return spec
 
 
-def main():
-    objective = input("What do you want to build?\n> ").strip()
-    if not objective:
-        raise SystemExit("Enter an objective before generating a plan.")
-
-    client = OllamaClient()
-    print("\nCreating project specification...")
-
-    try:
-        response = client.chat(
-            prompt=f"Create a project specification for:\n{objective}",
-            system=SYSTEM,
-            json_mode=True,
-        )
-        debug_dir = Path(__file__).resolve().parent.parent / "workspaces"
-        debug_dir.mkdir(parents=True, exist_ok=True)
-        debug_path = debug_dir / "last_planner_response.txt"
-        debug_path.write_text(response, encoding="utf-8")
-        spec = validate_spec(json.loads(response))
-    except (RuntimeError, ValueError) as error:
-        raise SystemExit(f"Planning failed: {error}")
-
-    root = Path(__file__).resolve().parent.parent
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    project_id = f"project-{timestamp}-{uuid.uuid4().hex[:8]}"
-    workspace = root / "workspaces" / project_id
-    workspace.mkdir(parents=True, exist_ok=False)
-
-    spec["objective"] = objective
-
-    spec_path = workspace / "spec.json"
-    spec_path.write_text(
-        json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+def plan_project(objective, project_type, root, client=None):
+    if not objective.strip() or project_type not in SUPPORTED_TYPES:
+        raise ValueError("Enter an objective and a supported project type.")
+    client = client or OllamaClient()
+    response = client.chat(
+        prompt=f"Create a specification for project_type={project_type}:\n{objective}",
+        system=SYSTEM, json_mode=True,
     )
+    spec = validate_spec(json.loads(response))
+    if spec['project_type'] != project_type:
+        raise ValueError("Planner returned a different project type.")
+    spec['objective'] = objective.strip()
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    workspace = Path(root) / f"project-{timestamp}-{uuid.uuid4().hex[:8]}"
+    workspace.mkdir(parents=True, exist_ok=False)
+    (workspace / 'spec.json').write_text(json.dumps(spec, indent=2) + '\n')
+    return workspace
 
-    print(f"\nProject: {spec['name']}")
-    print(spec["summary"])
 
-    print("\nAcceptance criteria:")
-    for criterion in spec["acceptance_criteria"]:
-        print(f"- {criterion}")
-
-    print("\nTasks:")
-    for task in spec["tasks"]:
-        print(f"- {task['id']}: {task['title']}")
-
-    print(f"\nSaved specification: {spec_path}")
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--objective')
+    parser.add_argument('--project-type', choices=SUPPORTED_TYPES, required=True)
+    args = parser.parse_args()
+    objective = args.objective or input("What do you want to build?\n> ")
+    try:
+        workspace = plan_project(objective, args.project_type,
+                                 Path(__file__).resolve().parent.parent / 'workspaces')
+    except (OSError, RuntimeError, ValueError) as error:
+        raise SystemExit(f"Planning failed: {error}")
+    print(f"Saved specification: {workspace / 'spec.json'}")
 
 
 if __name__ == "__main__":

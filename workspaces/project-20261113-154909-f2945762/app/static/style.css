@@ -1,22 +1,11 @@
-body {
-    font-family: Arial, sans-serif;
-}
-form, div, ul, p {
-    margin: 10px 0;
-}
-input[type="date"], input[type="text"], textarea, button {
-    padding: 5px;
-}
-button {
-    cursor: pointer;
-}
-#expense-list li {
-    border-bottom: 1px solid #ccc;
-    padding: 5px 0;
-}
-#error-message {
-    display: none;
-}
-#error-message.visible {
-    display: block;
-}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 1rem; font: 1rem/1.5 system-ui, sans-serif; background: #f4f6f8; color: #182330; }
+main { max-width: 48rem; margin: auto; }
+form, section { background: white; padding: 1rem; border-radius: .5rem; margin: 1rem 0; }
+label { display: block; margin-top: .5rem; }
+input, textarea, button { width: 100%; padding: .7rem; font: inherit; margin: .25rem 0; }
+button { cursor: pointer; background: #194f86; color: white; border: 0; border-radius: .25rem; }
+button:disabled { opacity: .6; cursor: wait; }
+li { overflow-wrap: anywhere; padding: .5rem 0; }
+#error-message { color: #9a1422; }
+[hidden] { display: none; }

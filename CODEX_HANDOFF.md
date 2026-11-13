@@ -41,3 +41,12 @@ Desktop entry point: python -m suite.desktop_preview
 9. Report exactly what was tested and what still requires native Mac verification.
 
 Keep generated application execution isolated. Do not publish or deploy.
+
+## Implementation update
+
+The desktop now connects explicit plan/generate/build/verify/repair/preview
+operations; task-manager and expense-tracker profiles are supported explicitly.
+Canonical acceptance fixtures live in suite/acceptance and trusted, hash-locked
+Docker recipes in suite/runtime. Existing generated tests and the task-manager
+reference remain unchanged. See README.md for reproducible setup and
+docs/validation.md for evidence, scope, and native Mac verification still needed.

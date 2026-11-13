@@ -1,9 +1,11 @@
 import argparse
 import ast
 import json
+import shutil
 from pathlib import Path
 
 from suite.llm import OllamaClient
+from suite.contracts import FILES, ROOT, contract_type
 
 
 SYSTEM = """
@@ -19,7 +21,7 @@ Return only a JSON object:
 Rules:
 - Generate only the requested file.
 - No Markdown fences, placeholders, TODOs, or omitted implementations.
-- Keep code compatible with Python 3.9.
+- Keep code compatible with Python 3.11; avoid Python 3.12-only f-string syntax.
 - Keep imports, API routes, fields, and selectors consistent with the contract.
 - app.py must expose create_app(test_config=None).
 - requirements.txt must list Flask, pytest, and pytest-playwright.
@@ -77,17 +79,13 @@ def validate_file(raw, relative_path):
         raise ValueError("Returned file content is empty or invalid.")
 
     if relative_path.endswith(".py"):
-        ast.parse(content, filename=relative_path)
+        ast.parse(content, filename=relative_path, feature_version=(3, 11))
 
     return content
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("workspace", type=Path)
-    args = parser.parse_args()
-
-    workspace = args.workspace.resolve()
+def generate_project(workspace, client=None):
+    workspace = Path(workspace).resolve()
     app_dir = workspace / "app"
     responses_dir = workspace / "generation_responses"
 
@@ -101,23 +99,15 @@ def main():
     except (OSError, ValueError) as error:
         raise SystemExit(f"Cannot read project inputs: {error}")
 
-    # Fixed allowlist for our first prototype.
-    allowed_files = [
-        "app.py",
-        "requirements.txt",
-        "templates/index.html",
-        "static/style.css",
-        "static/app.js",
-        "tests/test_backend.py",
-        "tests/test_browser.py",
-    ]
-
-    if contract.get("files") != allowed_files:
-        raise SystemExit("Contract files differ from the supported prototype.")
+    try:
+        kind = contract_type(contract)
+    except ValueError as error:
+        raise SystemExit(str(error))
+    allowed_files = FILES
 
     # Refuse symlinks so generated writes cannot escape through them.
     for directory in (app_dir, responses_dir):
-        if directory.is_symlink():
+        if any(part.is_symlink() for part in (directory, *directory.parents)):
             raise SystemExit(f"Refusing symlink directory: {directory}")
 
     app_dir.mkdir(exist_ok=True)
@@ -128,7 +118,7 @@ def main():
         if target.is_symlink() or target.parent.is_symlink():
             raise SystemExit(f"Refusing symlink path: {target}")
 
-    client = OllamaClient()
+    client = client or OllamaClient()
     previous_files = {}
 
     for index, relative_path in enumerate(allowed_files, start=1):
@@ -140,6 +130,16 @@ def main():
 
             previous_files[relative_path] = target.read_text(encoding="utf-8")
             print(f"[{index}/{len(allowed_files)}] Keeping: {relative_path}")
+            continue
+
+        if relative_path.startswith('tests/'):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / 'acceptance' / kind / Path(relative_path).name, target)
+            print(f"Installed suite-owned acceptance tests: {relative_path}")
+            continue
+        if relative_path == 'requirements.txt':
+            target.write_text('Flask==3.1.2\npytest==8.4.2\npytest-playwright==0.7.2\n')
+            previous_files[relative_path] = target.read_text()
             continue
 
         print(
@@ -176,6 +176,14 @@ def main():
 
     print(f"\nGenerated application: {app_dir}")
     print("Code has been saved. Application tests have not run.")
+    return app_dir
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("workspace", type=Path)
+    args = parser.parse_args()
+    generate_project(args.workspace)
 
 
 if __name__ == "__main__":
