@@ -4,6 +4,8 @@ import copy
 import json
 from pathlib import Path
 
+from suite.files import create_file
+
 ROOT = Path(__file__).resolve().parent
 SUPPORTED_TYPES = ("task_manager", "expense_tracker")
 FILES = ["app.py", "requirements.txt", "templates/index.html", "static/style.css",
@@ -58,9 +60,7 @@ def main():
         if args.project_type:
             spec["project_type"] = args.project_type
         contract = build_contract(spec)
-        with (workspace / "contract.json").open("x") as output:
-            json.dump(contract, output, indent=2)
-            output.write("\n")
+        create_file(workspace / "contract.json", json.dumps(contract, indent=2) + "\n")
     except (OSError, ValueError, KeyError, TypeError) as error:
         raise SystemExit(f"Cannot build contract: {error}")
     print(f"Saved contract: {workspace / 'contract.json'}")

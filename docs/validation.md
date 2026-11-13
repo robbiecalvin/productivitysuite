@@ -129,3 +129,22 @@ cleanup exit status.
 The real task-manager simulated-model/Docker integration also passed after this
 change, including one backend repair, all 32 acceptance cases, preview HTTP
 create/read and successful shutdown. No containers remained after the check.
+
+## Follow-up: generation recovery
+
+Contract validation now finishes before any new contract is published. An
+unsupported specification cannot leave an empty `contract.json` that blocks a
+corrected retry. New specifications, contracts, generated source, requirements
+and acceptance copies are written to a temporary file in the destination
+directory, flushed, then published with an exclusive atomic link. Existing files
+remain untouched; write failures remove the temporary file instead of leaving
+partial source for the resume path to keep.
+
+The fast suite passed 66 tests, with two desktop checks skipped without a display
+and three Docker cases deselected. The 16 generation/contract checks also passed
+after the final changes, including retrying a corrected specification and
+resuming after a simulated disk-write failure.
+Both real Docker integration workflows also passed after the change, exercising
+planning, generation, one bounded repair, backend/Chromium acceptance and preview
+CRUD/cleanup for task-manager and expense-tracker projects. The separate Python
+3.11 syntax-rejection Docker case was not rerun for this follow-up.

@@ -55,7 +55,9 @@ verified. Do not disable verification. No external Docker wrapper is required.
 
 Choose the project type in the desktop. **Plan New Project** saves a specification
 and contract without needing an existing workspace. **Generate Selected** fills
-missing implementation files; rerunning preserves existing files. **Build &
+missing implementation files; rerunning preserves existing files. New specifications,
+contracts and application files are published atomically, so failed writes do not
+leave partial files that block a corrected retry. **Build &
 Verify New Project** plans, generates, tests, and attempts bounded backend repairs.
 **Run All Tests** performs no repairs. **Test & Repair Backend** uses the displayed
 0–3 limit. Backend acceptance must pass before the browser suite runs. A frontend

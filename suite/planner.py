@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from suite.llm import OllamaClient
+from suite.files import create_file
 from suite.contracts import SUPPORTED_TYPES
 
 
@@ -111,7 +112,7 @@ def plan_project(objective, project_type, root, client=None):
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     workspace = Path(root) / f"project-{timestamp}-{uuid.uuid4().hex[:8]}"
     workspace.mkdir(parents=True, exist_ok=False)
-    (workspace / 'spec.json').write_text(json.dumps(spec, indent=2) + '\n')
+    create_file(workspace / 'spec.json', json.dumps(spec, indent=2) + '\n')
     return workspace
 
 

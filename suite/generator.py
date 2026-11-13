@@ -1,10 +1,10 @@
 import argparse
 import ast
 import json
-import shutil
 from pathlib import Path
 
 from suite.llm import OllamaClient
+from suite.files import create_file
 from suite.contracts import FILES, ROOT, contract_type
 
 
@@ -134,11 +134,11 @@ def generate_project(workspace, client=None):
 
         if relative_path.startswith('tests/'):
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(ROOT / 'acceptance' / kind / Path(relative_path).name, target)
+            create_file(target, (ROOT / 'acceptance' / kind / Path(relative_path).name).read_text(encoding='utf-8'))
             print(f"Installed suite-owned acceptance tests: {relative_path}")
             continue
         if relative_path == 'requirements.txt':
-            target.write_text('Flask==3.1.2\npytest==8.4.2\npytest-playwright==0.7.2\n')
+            create_file(target, 'Flask==3.1.2\npytest==8.4.2\npytest-playwright==0.7.2\n')
             previous_files[relative_path] = target.read_text()
             continue
 
@@ -163,8 +163,7 @@ def generate_project(workspace, client=None):
             content = validate_file(raw, relative_path)
 
             target.parent.mkdir(parents=True, exist_ok=True)
-            with target.open("x", encoding="utf-8") as output:
-                output.write(content)
+            create_file(target, content)
 
         except (RuntimeError, ValueError, SyntaxError, OSError) as error:
             raise SystemExit(

@@ -6,6 +6,7 @@ from pathlib import Path
 from suite.contracts import SUPPORTED_TYPES, build_contract, contract_type
 from suite.controller import run_controller
 from suite.generator import generate_project
+from suite.files import create_file
 from suite.planner import plan_project
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -16,9 +17,8 @@ def generate(workspace, client=None):
     contract_path = workspace / 'contract.json'
     if not contract_path.exists():
         spec = json.loads((workspace / 'spec.json').read_text())
-        with contract_path.open('x') as output:
-            json.dump(build_contract(spec), output, indent=2)
-            output.write('\n')
+        contract = build_contract(spec)
+        create_file(contract_path, json.dumps(contract, indent=2) + '\n')
     contract_type(json.loads(contract_path.read_text()))
     return generate_project(workspace, client=client)
 
@@ -49,7 +49,7 @@ def main():
             workspace = plan_project(args.objective, args.project_type, ROOT / 'workspaces')
             # Create a supported contract alongside the plan; generation can resume later.
             spec = json.loads((workspace / 'spec.json').read_text())
-            (workspace / 'contract.json').write_text(json.dumps(build_contract(spec), indent=2) + '\n')
+            create_file(workspace / 'contract.json', json.dumps(build_contract(spec), indent=2) + '\n')
             print(f'PROJECT_WORKSPACE={workspace}', flush=True)
             print('Plan and contract saved. Application is not generated or verified.')
         else:
