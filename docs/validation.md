@@ -165,3 +165,17 @@ The real expense-tracker Docker integration also passed: one deliberate defect
 was repaired, all 29 backend and 12 Chromium cases passed, and preview HTTP
 create/read and cleanup succeeded. The other two Docker cases were deselected
 for this follow-up.
+
+## Follow-up: malformed project inputs
+
+Contract validation now rejects malformed legacy `routes` with a clear validation
+error instead of an attribute/type traceback. Contract creation also validates
+the project name and nonempty textual acceptance criteria before publishing any
+file. Missing metadata therefore stops the generation CLI cleanly and leaves no
+empty contract that would obstruct a corrected retry.
+
+Eleven new regression cases failed before this fix and pass afterward. The fast
+suite passed 81 tests; two desktop checks were skipped without a display and
+three Docker integration cases were deselected. Supported-profile compatibility
+and generation recovery checks passed; the Docker runtime was unchanged and its
+integration cases were not rerun for this input-validation change.

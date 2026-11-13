@@ -21,10 +21,13 @@ def profile(project_type):
 def contract_type(contract):
     if not isinstance(contract, dict):
         raise ValueError("Contract must be a JSON object.")
+    routes = contract.get("routes")
+    if not isinstance(routes, list) or any(not isinstance(route, dict) for route in routes):
+        raise ValueError("Contract routes must be a list of route objects.")
     kind = contract.get("project_type")
     # Compatibility only for the original, agreed task-manager contract.
     if kind is None and "task" in contract and any(
-        route.get("path") == "/api/tasks" for route in contract.get("routes", [])
+        route.get("path") == "/api/tasks" for route in routes
     ):
         kind = "task_manager"
     expected = profile(kind)
@@ -44,6 +47,12 @@ def build_contract(spec):
         raise ValueError("Specification must be a JSON object.")
     kind = spec.get("project_type")
     contract = copy.deepcopy(profile(kind))
+    if not isinstance(spec.get("name"), str) or not spec["name"].strip():
+        raise ValueError("Missing or invalid field: name")
+    criteria = spec.get("acceptance_criteria")
+    if (not isinstance(criteria, list) or not criteria
+            or any(not isinstance(value, str) or not value.strip() for value in criteria)):
+        raise ValueError("acceptance_criteria must be a nonempty list of text.")
     contract.update(project_type=kind, project_name=spec["name"],
                     acceptance_criteria=spec["acceptance_criteria"])
     return contract

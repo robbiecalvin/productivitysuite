@@ -80,3 +80,19 @@ def test_scope_cannot_silently_change_supported_currency():
 def test_non_object_contract_rejected():
     with pytest.raises(ValueError, match='JSON object'):
         contract_type([])
+
+
+@pytest.mark.parametrize('routes', [None, 12, 'GET /api/tasks', {}, [None], ['/api/tasks']])
+def test_malformed_legacy_routes_report_validation_error(routes):
+    with pytest.raises(ValueError, match='routes'):
+        contract_type({'task': {}, 'routes': routes})
+
+
+@pytest.mark.parametrize('changes,field', [
+    ({'name': None}, 'name'), ({'name': ' '}, 'name'),
+    ({'acceptance_criteria': []}, 'acceptance_criteria'),
+    ({'acceptance_criteria': [None]}, 'acceptance_criteria')])
+def test_contract_metadata_is_validated(changes, field):
+    spec = {'project_type': 'task_manager', 'name': 'Tasks', 'acceptance_criteria': ['Create tasks'], **changes}
+    with pytest.raises(ValueError, match=field):
+        build_contract(spec)

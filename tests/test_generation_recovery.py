@@ -64,3 +64,11 @@ def test_generation_can_resume_after_failed_source_write(tmp_path, monkeypatch):
     generate_project(tmp_path, Client())
     assert (tmp_path / 'app/app.py').read_bytes() == (REFERENCE / 'app.py').read_bytes()
     assert (tmp_path / 'app/tests/test_backend.py').is_file()
+
+
+def test_missing_spec_metadata_stops_cli_without_creating_contract(tmp_path, monkeypatch):
+    (tmp_path / 'spec.json').write_text(json.dumps({'project_type': 'expense_tracker'}))
+    monkeypatch.setattr('sys.argv', ['workflow', 'generate', '--workspace', str(tmp_path)])
+    with pytest.raises(SystemExit, match='Workflow stopped:.*name'):
+        workflow.main()
+    assert not (tmp_path / 'contract.json').exists()
