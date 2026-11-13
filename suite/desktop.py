@@ -12,6 +12,7 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 from tkinter.scrolledtext import ScrolledText
 
 from suite.contracts import SUPPORTED_TYPES
+from suite.app_icon import apply_app_icon
 
 ROOT = Path(__file__).resolve().parent.parent
 # Preserve shell-selected tools; Finder still gets the usual Docker locations.
@@ -49,6 +50,7 @@ class Desktop:
         self.stop_requested = threading.Event()
         self.close_pending = False
         window.title('Intelligent Productivity Suite')
+        apply_app_icon(window)
         window.geometry('1100x760')
         window.minsize(820, 600)
         window.protocol('WM_DELETE_WINDOW', self.close)

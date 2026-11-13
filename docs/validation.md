@@ -185,3 +185,17 @@ suite passed 81 tests; two desktop checks were skipped without a display and
 three Docker integration cases were deselected. Supported-profile compatibility
 and generation recovery checks passed; the Docker runtime was unchanged and its
 integration cases were not rerun for this input-validation change.
+
+## App icon support (artwork pending)
+
+Startup now loads `suite/assets/app-icon.png` for the Tk window and retains the
+image for the window lifetime. On macOS, an AppKit bridge also sets the running
+Dock icon without adding a PyObjC dependency. This native path still needs Mac
+verification; Finder bundle/launcher icons are separate from the running icon.
+
+The requested robot image is visible in chat but was not exposed as a readable
+file in the workspace. It has not been installed or replaced with substitute
+artwork. The original PNG must be supplied as an accessible file before this
+request is complete. Tests used a small fixture PNG, not the requested artwork.
+The fast suite with the Linux display passed 85 tests; three Docker cases were
+deselected because application execution was unchanged.
