@@ -83,3 +83,21 @@ def test_interrupt_saves_report(workspace):
     report = run_controller(workspace, verify_fn=interrupted)
     assert report['status'] == 'interrupted'
     assert json.loads(next((workspace / 'runs').glob('*/report.json')).read_text())['status'] == 'interrupted'
+
+
+@pytest.mark.parametrize('changed_mode', ['backend', 'browser'])
+def test_source_changed_during_tests_cannot_be_verified(workspace, changed_mode):
+    calls = []
+    def verify(path, mode):
+        calls.append(mode)
+        if mode == changed_mode:
+            (path / 'app/app.py').write_text('new, untested source')
+        return result(passed=True)
+    report = run_controller(workspace, verify_fn=verify,
+                            repair_fn=lambda path: pytest.fail('Concurrent edits must not trigger repairs'))
+    assert not report['passed']
+    assert report['status'] == 'controller_error'
+    assert 'app.py changed during verification' in report['error']
+    assert calls == (['backend'] if changed_mode == 'backend' else ['backend', 'browser'])
+    saved = json.loads(next((workspace / 'runs').glob('*/report.json')).read_text())
+    assert saved['passed'] is False

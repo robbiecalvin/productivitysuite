@@ -56,8 +56,11 @@ def run_controller(workspace, max_repairs=3, verify_fn=None, repair_fn=None):
                 raise RuntimeError(f'Protected file changed: {path}')
 
     def check(mode, checkpoint):
+        tested_source = fingerprint(app_path)
         result = verify_fn(workspace, mode)
         check_protected_files()
+        if fingerprint(app_path) != tested_source:
+            raise RuntimeError('app.py changed during verification; current source is unverified.')
         (checkpoint / f'{mode}-report.json').write_text(json.dumps(result, indent=2) + '\n')
         for name in (f'{mode}-build.log', f'{mode}-test.log', f'{mode}-results.xml'):
             source = workspace / name

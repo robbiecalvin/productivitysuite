@@ -98,3 +98,17 @@ model-driven frontend repair, arbitrary application types and deployment remain
 outside the supported workflow. Chromium OS packages come from signed Debian
 repositories; fresh rebuilds can select a newer package version even though
 Python packages and the Python base image are locked.
+
+## Follow-up: source changes during verification
+
+The controller now hashes `app.py` before and after each acceptance run. If it
+changes during backend or browser verification, the run stops with a controller
+error and the current source remains unverified; it cannot inherit the test
+result of a different source revision. Two regression cases reproduced the
+incorrect verified status before the fix and pass afterward.
+
+The follow-up fast run passed 51 tests, with two desktop tests skipped because
+no display was running and three Docker cases deselected. The full-suite counts
+in the table above describe the initial implementation run.
+The unchanged task-manager reference also passed a fresh controller run with
+28 backend and 4 Chromium cases, without repairs, after this guard was added.
