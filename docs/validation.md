@@ -6,11 +6,17 @@ only inside Docker. No application was deployed or published.
 
 ## Completed checks
 
+The final combined run tested implementation commit `26d2955`, including all
+follow-up fixes, on November 13, 2026. The setup script was also rerun against
+the retained environment. The later finalization commit changes documentation
+only. Earlier targeted results below are historical and do not replace this
+combined result.
+
 | Check | Result |
 | --- | --- |
 | `scripts/setup.sh` with hash-locked dependencies | Passed |
-| Fast suite, with Linux Tk display | 51 passed |
-| Full suite with Tk and opt-in Docker integration | 54 passed; no skips |
+| Fast checks with Linux Tk (within final combined run) | 83 passed |
+| Final combined suite with Tk and all Docker integration cases | 86 passed; no failures or skips |
 | Existing task manager, no repairs | 28 backend + 4 Chromium passed |
 | Existing expense tracker, no repairs | 29 backend + 12 Chromium passed |
 | Simulated task-manager and expense builds | Both passed after one deliberate backend defect and one repair each |
@@ -18,7 +24,7 @@ only inside Docker. No application was deployed or published.
 | Existing project tests/reference preservation | No Git changes; task fixtures copied byte-for-byte |
 | `git diff --check` | Passed |
 
-The 54-test host suite includes the three Docker integration cases. Acceptance
+The final 86-test host suite includes the three Docker integration cases. Acceptance
 counts above are nested container results, not additional host pytest tests.
 
 ## Reference applications
@@ -108,8 +114,8 @@ result of a different source revision. Two regression cases reproduced the
 incorrect verified status before the fix and pass afterward.
 
 The follow-up fast run passed 51 tests, with two desktop tests skipped because
-no display was running and three Docker cases deselected. The full-suite counts
-in the table above describe the initial implementation run.
+no display was running and three Docker cases deselected. These were targeted checks at that stage; the final combined result is shown
+in the table above.
 The unchanged task-manager reference also passed a fresh controller run with
 28 backend and 4 Chromium cases, without repairs, after this guard was added.
 

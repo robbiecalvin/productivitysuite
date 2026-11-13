@@ -1,52 +1,57 @@
 # Intelligent Productivity Suite
 
-## Goal
-Build a local desktop application where the user describes a supported
-application and the system plans, generates, tests, repairs, and previews it.
+## Goal and current state
 
-## Existing implementation
-Inspect suite/ for the Ollama client, planner, generator, contracts,
-Docker runner, bounded repair controller, desktop UI, and preview engine.
-Desktop entry point: python -m suite.desktop_preview
+A local desktop application where the user describes a supported application and
+plans, generates, independently tests, repairs, and previews it. The connected
+workflow is implemented on `feat/supported-project-workflow`.
 
-## Reference projects
-- workspaces/project-20261113-131615-917f271f:
-  Task manager; previously passed 28 backend and 4 Chromium browser tests.
-- workspaces/repair-trial-001:
-  Disposable automatic repair experiment; eventually passed all 32 tests
-  after repair-prompt adjustments.
-- workspaces/project-20261113-154909-f2945762:
-  Expense tracker; specification, contract, and generated files exist.
-  Application behavior is unverified.
+Desktop entry point: `.venv-desktop/bin/python -m suite.desktop_preview`.
+Run `./scripts/setup.sh` first. See README.md for dependencies, CLI commands,
+Ollama configuration and the supported scope.
 
-## Known limitations
-- Contract creation and repair prompts contain task-manager assumptions.
-- Generator tests are not independent acceptance evidence.
-- Python 3.11 compatibility needs checking, including generated f-strings.
-- Preview uses temporary storage.
-- Desktop uses negative repair limits as internal operation markers.
-- Desktop runtime needs modern Python/Tk; Apple Python 3.9/Tk 8.5 rendered blank.
-- Cloud localhost cannot reach Ollama running on the user's Mac.
-- The current .app is only a launcher, not a self-contained distribution.
+## Implemented workflow
 
-## Requested work
-1. Inspect the repository and document reproducible setup.
-2. Preserve the task-manager reference and independently verify its tests.
-3. Inspect and verify the expense tracker against its contract.
-4. Replace project-specific assumptions with explicit supported contracts.
-5. Connect generation, testing, bounded repairs, and preview to the desktop UI.
-6. Preserve acceptance tests and checkpoints; never weaken tests to pass.
-7. Add meaningful checks for controller failure paths and model-service errors.
-8. Use a simulated model service for cloud checks when local Ollama is unavailable.
-9. Report exactly what was tested and what still requires native Mac verification.
+- Explicit `task_manager` and `expense_tracker` profiles define the API, fields,
+  validation, selectors and acceptance checks. Other types fail explicitly.
+- The desktop connects plan, generate, build-and-verify, test, bounded backend
+  repair and temporary preview operations. Planning needs no existing project.
+- Suite-owned Docker recipes execute only allowlisted application sources and
+  canonical acceptance fixtures. Generated dependency lists, Dockerfiles and
+  tests cannot control verification. Generated apps never run on the host.
+- Repairs affect only app.py, with a 0–3 limit. Preserve source checkpoints,
+  acceptance fixtures, protected-input hashes, responses, candidates and diffs.
+- New files and repaired backends are published atomically. Malformed inputs,
+  source changes observed during verification, and failed cleanup cannot earn a
+  successful verified/cleaned-up status.
 
-Keep generated application execution isolated. Do not publish or deploy.
+## Reference projects and evidence
 
-## Implementation update
+- `workspaces/project-20261113-131615-917f271f`: original task manager, preserved
+  unchanged; 28 backend and 4 Chromium acceptance cases passed.
+- `workspaces/repair-trial-001`: original repair experiment, preserved unchanged.
+- `workspaces/project-20261113-154909-f2945762`: expense implementation corrected
+  against its existing contract; 29 independent backend and 12 Chromium cases
+  passed. Its original generated tests remain unchanged for provenance and are
+  broken; they are not used or reported as passing acceptance evidence.
 
-The desktop now connects explicit plan/generate/build/verify/repair/preview
-operations; task-manager and expense-tracker profiles are supported explicitly.
-Canonical acceptance fixtures live in suite/acceptance and trusted, hash-locked
-Docker recipes in suite/runtime. Existing generated tests and the task-manager
-reference remain unchanged. See README.md for reproducible setup and
-docs/validation.md for evidence, scope, and native Mac verification still needed.
+Final combined cloud validation: 86 tests passed, no failures or skips, with
+Linux Tk and all three Docker integration cases enabled. Simulated Ollama HTTP
+workflows for both types exercised generation, one deliberate backend defect,
+one repair, independent acceptance and preview CRUD/cleanup. The simulation does
+not establish real model quality. Full commands and evidence: docs/validation.md.
+
+## Remaining verification and limits
+
+- Verify Finder launch, dialogs/focus, closing, folder opening and default-browser
+  preview on a native Mac with modern Python/Tk.
+- Verify Docker Desktop on the intended Intel/Apple Silicon Mac and a real local
+  Ollama model. Cloud localhost cannot reach the user's Mac localhost; configure
+  a reachable OLLAMA_BASE_URL and OLLAMA_MODEL for live generation.
+- Preview storage is temporary. Frontend repair, arbitrary application types and
+  deployment are outside the supported scope.
+- The existing .command is a launcher, not a self-contained, signed or notarized
+  Mac application. Packaging remains outside this implementation.
+
+Keep generated application execution isolated. Preserve independent acceptance
+tests; never weaken checks to make generated code pass. Do not publish or deploy.
