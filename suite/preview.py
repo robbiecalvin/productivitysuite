@@ -22,6 +22,31 @@ def docker_output(docker, arguments):
     return result.stdout.strip()
 
 
+def cleanup_resources(docker, container, image):
+    errors = []
+    for arguments, missing in ((['rm', '-f', container], 'No such container'),
+                               (['image', 'rm', image], 'No such image')):
+        try:
+            result = subprocess.run([docker, *arguments], capture_output=True,
+                                    text=True, timeout=20, check=False)
+            if result.returncode and missing not in result.stderr:
+                errors.append(result.stderr.strip() or result.stdout.strip() or
+                              f"Docker {' '.join(arguments)} failed ({result.returncode}).")
+        except (OSError, subprocess.SubprocessError) as error:
+            errors.append(str(error))
+    return errors
+
+
+def preview_address(output):
+    addresses = output.splitlines()
+    if len(addresses) != 1:
+        raise RuntimeError('Preview did not publish exactly one loopback port.')
+    host, separator, port = addresses[0].rpartition(':')
+    if host != '127.0.0.1' or not separator or not port.isdecimal() or not 1 <= int(port) <= 65535:
+        raise RuntimeError('Preview port is not a valid loopback address.')
+    return f'http://{addresses[0]}'
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("workspace", type=Path)
@@ -45,7 +70,7 @@ def main():
 
         print("Starting local preview...", flush=True)
         docker_output(docker, [
-            "run", "-d", "--init", "--name", container,
+            "run", "-d", "--name", container,
             *container_options(),
             "--network", "bridge",
             "-p", "127.0.0.1::8000",
@@ -59,10 +84,7 @@ def main():
             ),
         ])
 
-        address = docker_output(
-            docker, ["port", container, "8000/tcp"]
-        ).splitlines()[0]
-        url = f"http://{address}"
+        url = preview_address(docker_output(docker, ["port", container, "8000/tcp"]))
 
         deadline = time.monotonic() + 30
         with requests.Session() as session:
@@ -111,22 +133,14 @@ def main():
         except (OSError, RuntimeError, subprocess.SubprocessError):
             pass
 
-        for command in (
-            [docker, "rm", "-f", container],
-            [docker, "image", "rm", image],
-        ):
-            try:
-                subprocess.run(
-                    command,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    timeout=20,
-                    check=False,
-                )
-            except (OSError, subprocess.SubprocessError):
-                pass
-
-        print("Preview cleanup finished.", flush=True)
+        cleanup_errors = cleanup_resources(docker, container, image)
+        if cleanup_errors:
+            exit_code = 1
+            print("Preview cleanup incomplete; resources may remain:", flush=True)
+            for error in cleanup_errors:
+                print(error, flush=True)
+        else:
+            print("Preview cleanup finished.", flush=True)
 
     raise SystemExit(exit_code)
 

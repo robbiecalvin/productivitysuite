@@ -112,3 +112,20 @@ no display was running and three Docker cases deselected. The full-suite counts
 in the table above describe the initial implementation run.
 The unchanged task-manager reference also passed a fresh controller run with
 28 backend and 4 Chromium cases, without repairs, after this guard was added.
+
+## Follow-up: preview cleanup failures
+
+Preview shutdown now checks Docker removal results. A failed or timed-out removal
+returns an unsuccessful exit status and reports that resources may remain; the
+desktop therefore cannot claim temporary data was removed. Cleanup still attempts
+both the container and image and remains repeatable when resources are already
+absent. Invalid or non-loopback published-port output produces a controlled
+startup failure instead of an unhandled indexing error.
+
+The follow-up fast run passed 62 tests; two desktop cases were skipped without a
+display and the three opt-in Docker cases were deselected. New tests exercise
+removal errors, timeouts, absent resources, invalid addresses and the failed
+cleanup exit status.
+The real task-manager simulated-model/Docker integration also passed after this
+change, including one backend repair, all 32 acceptance cases, preview HTTP
+create/read and successful shutdown. No containers remained after the check.
