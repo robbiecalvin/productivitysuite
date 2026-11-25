@@ -29,3 +29,9 @@ Historical results were not rerun for this case study. Expense-tracker behavior 
 
 ## Resume summary
 Developed a local AI-assisted application generation pipeline with explicit contracts, isolated execution, browser acceptance testing and bounded repair.
+
+## Verified CI evidence — 2026-11-25
+
+4 deterministic contract tests passed; no live model or generated application execution.
+
+[Completed run](https://github.com/robbiecalvin/productivitysuite/actions/runs/45642859178) · [Tested revision](https://github.com/robbiecalvin/productivitysuite/commit/c0fa7624df6c03e0a28af15494ad668b2accf60c)
