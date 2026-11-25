@@ -23,3 +23,8 @@ See the handoff for runtime limitations, local Ollama connectivity, Python/Tk co
 ## Status
 
 Development project; not a verified production release. Do not publish or deploy generated applications without explicit review.
+
+
+## Technical portfolio case study
+
+[Read the technical case study](CASE_STUDY.md) for the problem, architecture, engineering decisions, evaluation evidence and limitations.
