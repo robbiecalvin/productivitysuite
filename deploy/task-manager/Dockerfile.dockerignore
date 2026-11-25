@@ -1,0 +1,7 @@
+**
+!deploy/task-manager/requirements.txt
+!deploy/task-manager/serve.py
+!workspaces/project-20261113-131615-917f271f/app/app.py
+!workspaces/project-20261113-131615-917f271f/app/templates/index.html
+!workspaces/project-20261113-131615-917f271f/app/static/app.js
+!workspaces/project-20261113-131615-917f271f/app/static/style.css
