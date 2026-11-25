@@ -28,3 +28,8 @@ Development project; not a verified production release. Do not publish or deploy
 ## Technical portfolio case study
 
 [Read the technical case study](CASE_STUDY.md) for the problem, architecture, engineering decisions, evaluation evidence and limitations.
+
+## Hosted task manager demo
+
+See the [deployment guide](deploy/task-manager/README.md) to run the reference
+task manager as a standalone web app with persistent SQLite storage.

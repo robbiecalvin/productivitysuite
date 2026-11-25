@@ -1,0 +1,48 @@
+{
+  "started_before": "2026-11-25T16:26:14.904537009Z",
+  "started_after": "2026-11-25T16:26:35.30392488Z",
+  "before": {
+    "tasks": [
+      {
+        "completed": true,
+        "description": "Add test tasks and confirm the task list loads.",
+        "id": 1,
+        "title": "Draft the demo checklist"
+      },
+      {
+        "completed": true,
+        "description": "Check that titles and completion state survive the restart.",
+        "id": 2,
+        "title": "Verify tasks after restart"
+      },
+      {
+        "completed": false,
+        "description": "Save a browser screenshot for the portfolio case study.",
+        "id": 3,
+        "title": "Capture the demo screenshot"
+      }
+    ]
+  },
+  "after": {
+    "tasks": [
+      {
+        "completed": true,
+        "description": "Add test tasks and confirm the task list loads.",
+        "id": 1,
+        "title": "Draft the demo checklist"
+      },
+      {
+        "completed": true,
+        "description": "Check that titles and completion state survive the restart.",
+        "id": 2,
+        "title": "Verify tasks after restart"
+      },
+      {
+        "completed": false,
+        "description": "Save a browser screenshot for the portfolio case study.",
+        "id": 3,
+        "title": "Capture the demo screenshot"
+      }
+    ]
+  }
+}
