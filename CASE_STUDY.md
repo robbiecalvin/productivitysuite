@@ -27,6 +27,14 @@ Use the documented local prerequisites and run `python -m suite.desktop_preview`
 ## Limitations
 Historical results were not rerun for this case study. Expense-tracker behavior remains unverified; local model and container dependencies affect reproducibility.
 
+## Reproducible fixture demonstration
+
+The fixture supplies `Synthetic task manager` with the acceptance criterion `Persist tasks`. The contract should retain that criterion, specify five routes, return 201 for task creation and 204 for deletion, produce identical results for repeated inputs, and reject a spec without acceptance criteria. This scenario needs neither an Ollama model nor a running container.
+
+```sh
+python -m unittest discover -s tests -v
+```
+
 ## Resume summary
 Developed a local AI-assisted application generation pipeline with explicit contracts, isolated execution, browser acceptance testing and bounded repair.
 
